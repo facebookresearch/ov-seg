@@ -41,8 +41,8 @@ class OpenVocabMaskFormerHead(nn.Module):
             logger = logging.getLogger(__name__)
             for k in list(state_dict.keys()):
                 newk = k
-                if "sem_seg_head" in k and not k.startswith(prefix + "predictor"):
-                    newk = k.replace(prefix, prefix + "pixel_decoder.")
+                # if "sem_seg_head" in k and not k.startswith(prefix + "predictor"):
+                #    newk = k.replace(prefix, prefix + "pixel_decoder.")
                     # logger.debug(f"{k} ==> {newk}")
                 if newk != k:
                     state_dict[newk] = state_dict[k]
