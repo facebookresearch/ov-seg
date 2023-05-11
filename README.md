@@ -4,9 +4,10 @@
 
 This is the official PyTorch implementation of our paper: <br>
 **Open-Vocabulary Semantic Segmentation with Mask-adapted CLIP**<br>
-[Feng Liang](https://jeff-liangf.github.io/), [Bichen Wu](https://www.linkedin.com/in/bichenwu), [Xiaoliang Dai](https://sites.google.com/view/xiaoliangdai/), [Kunpeng Li](https://kunpengli1994.github.io/), [Yinan Zhao](https://yinan-zhao.github.io/), [Hang Zhang](https://hangzhang.org/), [Peizhao Zhang](https://www.linkedin.com/in/peizhao-zhang-14846042/), [Peter Vajda](https://sites.google.com/site/vajdap), [Diana Marculescu](https://www.ece.utexas.edu/people/faculty/diana-marculescu)
+[Feng Liang](https://jeff-liangf.github.io/), [Bichen Wu](https://www.linkedin.com/in/bichenwu), [Xiaoliang Dai](https://sites.google.com/view/xiaoliangdai/), [Kunpeng Li](https://kunpengli1994.github.io/), [Yinan Zhao](https://yinan-zhao.github.io/), [Hang Zhang](https://hangzhang.org/), [Peizhao Zhang](https://www.linkedin.com/in/peizhao-zhang-14846042/), [Peter Vajda](https://sites.google.com/site/vajdap), [Diana Marculescu](https://www.ece.utexas.edu/people/faculty/diana-marculescu) <br>
+Computer Vision and Pattern Recognition Conference (CVPR), 2023
 
-[[arXiv](https://arxiv.org/abs/2210.04150)] [[Project](https://jeff-liangf.github.io/projects/ovseg/)]
+[[arXiv](https://arxiv.org/abs/2210.04150)] [[Project](https://jeff-liangf.github.io/projects/ovseg/)] [[huggingface demo](https://huggingface.co/spaces/facebook/ov-seg)]
 
 <p align="center">
 <img src="resources/ovseg.gif" width="100%">
