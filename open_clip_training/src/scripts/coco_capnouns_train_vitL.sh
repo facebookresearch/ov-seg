@@ -1,0 +1,19 @@
+torchrun --nproc_per_node 8 -m training.main \
+    --train-data /home/jeffliang/zsseg/datasets/coco/meta/coco_1cap_nouns_mIoU27.csv \
+    --train-num-samples 441459 \
+    --lr 0.000005 \
+    --warmup 100 \
+    --force-quick-gelu \
+    --dataset-type csv \
+    --batch-size 32 \
+    --precision amp \
+    --workers 4 \
+    --model  ViT-L-14 \
+    --lock-text \
+    --lock-image \
+    --lock-image-unlocked-groups 1 \
+    --zeroshot-frequency 1 \
+    --save-frequency 1 \
+    --epoch 5 \
+    --pretrained  openai \
+    --imagenet-val /home/jeffliang/zsseg/datasets/ADEChallengeData2016/images/validation_mask

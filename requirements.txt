@@ -7,3 +7,8 @@ wandb
 fire
 opencv-python
 pandas
+torchmetrics
+braceexpand
+torch-ema
+setuptools==59.5.0
+webdataset>=0.2.5

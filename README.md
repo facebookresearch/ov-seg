@@ -47,10 +47,11 @@ However portions of the project are under separate license terms: CLIP and ZSSEG
 If you use OVSeg in your research or wish to refer to the baseline results published in the paper, please use the following BibTeX entry.
 
 ```BibTeX
-@article{liang2022open,
-  title={Open-Vocabulary Semantic Segmentation with Mask-adapted CLIP},
+@inproceedings{liang2023open,
+  title={Open-vocabulary semantic segmentation with mask-adapted clip},
   author={Liang, Feng and Wu, Bichen and Dai, Xiaoliang and Li, Kunpeng and Zhao, Yinan and Zhang, Hang and Zhang, Peizhao and Vajda, Peter and Marculescu, Diana},
-  journal={arXiv preprint arXiv:2210.04150},
-  year={2022}
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={7061--7070},
+  year={2023}
 }
 ```
