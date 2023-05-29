@@ -30,6 +30,26 @@ $OPENCLIP_DATA/
   ade_gt_150cls_val/          # images of ADE gt masks with 150 categories, for evaluation only
 ```
 
+## Finetuning CLIP
+
+Note: we only implement the vallina implementation of finetuning CLIP. Training code of mask prompt tuning is not currently avaliable.
+
+```bash
+cd open_clip_training
+cd src
+bash scripts/coco_proposal_1cap_finetune_VitL.sh
+```
+
+The checkpoints would be save in logs. We have to replace the orginal CLIP in MaskFormer to the finetuned CLIP. We have provided a simple [convert_tool](../tools/ovseg_replace_clip.py).
+
+```bash
+# Go to the ov-seg root directory
+cd tools
+python ovseg_replace_clip.py
+# Test new checkpoint, make sure that MODEL.CLIP_ADAPTER.MASK_PROMPT_FWD is set to False
+python train_net.py --num-gpu 8 --eval-only --config-file configs/ovseg_swinB_vitL_bs32_120k.yaml MODEL.CLIP_ADAPTER.MASK_PROMPT_FWD False MODEL.WEIGHTS #PATH_to_new_stored_clpt DATASETS.TEST \(\"ade20k_sem_seg_val\",\)
+```
+
 # Original README of OpenCLIP V1.3
 
 [[Paper]](https://arxiv.org/abs/2109.01903) [[Colab]](https://colab.research.google.com/github/mlfoundations/open_clip/blob/master/docs/Interacting_with_open_clip.ipynb)

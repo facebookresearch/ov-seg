@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import logging
 import math
 from typing import Tuple, Union, Callable, Optional
+from operator import mul
+from functools import reduce
 
 import numpy as np
 import torch
@@ -277,22 +279,33 @@ class VisualTransformer(nn.Module):
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
-    def lock(self, unlocked_groups=0, freeze_bn_stats=False):
-        # assert unlocked_groups == 0, 'partial locking not currently supported for this model'
-        unlocked_param_names = []
-        if unlocked_groups == 1:
-            unlocked_param_names = ['ln_post', 'proj']
-        elif unlocked_groups == 2:
-            unlocked_param_names = ['ln_post', 'proj', 'ln_1', 'ln_2']
-        elif unlocked_groups == 3:
-            unlocked_param_names = ['ln_1', 'ln_2']
-        for name, param in self.named_parameters():
+    #     self.mask_pool = nn.AvgPool2d(patch_size, stride=patch_size)
+    #     self.mask_emb_depth = 3
+    #     self.mask_embedding = nn.Parameter(torch.zeros(self.mask_emb_depth, self.grid_size[0] * self.grid_size[1], self.width))
+    #     self.init_mask_embedding(mode='mae')
+
+    # def init_mask_embedding(self, mode='mae'):
+    #     if mode == 'mae':
+    #         # https://github.com/facebookresearch/mae/blob/main/models_mae.py#L80
+    #         torch.nn.init.normal_(self.mask_embedding, std=.02)
+    #     elif mode == 'vpt_random':
+    #         # https://github.com/KMnP/vpt/blob/main/src/models/vit_prompt/vit_mae.py#L34
+    #         val = math.sqrt(6. / float(3 * reduce(mul, self.patch_size, 1) + self.width))  # noqa
+    #         nn.init.uniform_(self.mask_embedding, -val, val)
+    #     elif mode == 'zeros':
+    #         pass
+
+    def lock(self, unlocked_groups=-1, freeze_bn_stats=False):
+        assert unlocked_groups in [-1, 0]
+        for _, param in self.named_parameters():
             param.requires_grad = False
-            for unlocked_name in unlocked_param_names:
-                if unlocked_name in name:
-                    param.requires_grad = True
-            # if name not in unlocked_param_names:
-            #     param.requires_grad = False
+        # if unlocked_groups == 0:
+        #     self.mask_embedding.requires_grad = True
+        #     logging.info('Only update mask embedding')
+        # elif unlocked_groups == -1:
+        #     logging.info('ALL parameters of visual encoder are frozen!')
+        
+
 
     @torch.jit.ignore
     def set_grad_checkpointing(self, enable=True):
@@ -448,6 +461,12 @@ class CLIP(nn.Module):
 
     def loc_text_tower(self, unlocked_groups=0):
         self.transformer.lock(unlocked_groups=unlocked_groups)
+        self.positional_embedding.requires_grad = False
+        self.text_projection.requires_grad = False
+        for param in self.token_embedding.parameters():
+            param.requires_grad = False
+        for param in self.ln_final.parameters():
+            param.requires_grad = False
 
     @torch.jit.ignore
     def set_grad_checkpointing(self, enable=True):

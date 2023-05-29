@@ -28,7 +28,14 @@ We release our largest model (Swin-Base + CLIP-ViT-L/14) [ovseg_swinbase_vitL14_
   ```bash
   python train_net.py --num-gpu 8 --eval-only --config-file configs/ovseg_swinB_vitL_bs32_120k.yaml MODEL.WEIGHTS #PATH_of_ovseg_swinbase_vitL14_ft_mpt.pth MODEL.CLIP_ADAPTER.CLIP_ENSEMBLE_WEIGHT 0.45  DATASETS.TEST \(\"pascalvoc20_sem_seg_val\",\)
   ```
-  
+
+You may also want to try our small model (R101c + CLIP-ViT-B/16) [ovseg_R101c_vitB16_ft_mpt.pth](https://drive.google.com/file/d/1ZmeFMEkhuLqaWkhz4t4IlQ8YflrYja8q/view?usp=drive_link) (md5: <tt>c746f4</tt>). 
+
+- Test on ADE20K-150
+  ```bash
+  python train_net.py --num-gpu 8 --eval-only --config-file configs/ovseg_R101c_vitB_bs32_120k.yaml MODEL.WEIGHTS #PATH_of_ovseg_R101c_vitB16_ft_mpt.pth DATASETS.TEST \(\"ade20k_sem_seg_val\",\) 
+  ```
+
 #### Performance benchmark
 
 | method                             | backbone | training dataset | A-847 | PC-459 | A-150 | PC-59 | PAS-20 |
@@ -96,4 +103,4 @@ CAUTION: The final results is sensitive to the ensemble (appendix A.5 in [paper]
 
 ### Fine-tuning CLIP with collected mask-category pairs
 
-We are still working on this part, stay tuned!
+Please see [open clip training](./open_clip_training/README.md)

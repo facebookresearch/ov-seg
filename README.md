@@ -26,6 +26,10 @@ Please see [datasets preparation](./datasets/DATASETS.md).
 
 Please see [getting started instruction](./GETTING_STARTED.md).
 
+## Finetuning CLIP
+
+Please see [open clip training](./open_clip_training/README.md).
+
 ## LICENSE
 
 Shield: [![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]

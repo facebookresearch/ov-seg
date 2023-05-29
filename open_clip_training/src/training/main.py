@@ -126,18 +126,7 @@ def main():
         scale=(args.scale_min, args.scale_max),
     )
     random_seed(args.seed, args.rank)
-    if args.contrastive_learning:
-        model_frozen, preprocess_train, _ = create_model_and_transforms(
-            args.model,
-            args.pretrained,
-            precision=args.precision,
-            device=device,
-            jit=args.torchscript,
-            force_quick_gelu=args.force_quick_gelu,
-            pretrained_image=args.pretrained_image,
-            scale=(args.scale_min, args.scale_max),
-            erosion=args.contrastive_learning
-        )
+
     if args.trace:
         model = trace_model(model, batch_size=args.batch_size, device=device)
 
@@ -172,7 +161,7 @@ def main():
             # this doesn't exist in older PyTorch, arg only added if enabled
             ddp_args['static_graph'] = True
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device],
-                                                          find_unused_parameters=False, **ddp_args)
+                                                          find_unused_parameters=True, **ddp_args)
 
     # create optimizer and scaler
     optimizer = None
@@ -268,9 +257,9 @@ def main():
     if 'train' not in data:
         evaluate(model, data, start_epoch, ema, args, writer)
         return
-
-    # if any(v in data for v in ('val', 'imagenet-val', 'imagenet-v2')):
-    #     evaluate(model, data, start_epoch, args, writer)
+    
+    if any(v in data for v in ('val', 'imagenet-val', 'imagenet-v2', 'ade-val')):
+        evaluate(model, data, start_epoch, ema, args, writer)
 
     for epoch in range(start_epoch, args.epochs):
         if is_master(args):
@@ -279,7 +268,7 @@ def main():
         train_one_epoch(model, data, epoch, optimizer, scaler, scheduler, ema, args, writer)
         completed_epoch = epoch + 1
 
-        if any(v in data for v in ('val', 'imagenet-val', 'imagenet-v2')):
+        if any(v in data for v in ('val', 'imagenet-val', 'imagenet-v2', 'ade-val')):
             evaluate(model, data, completed_epoch, ema, args, writer)
 
         # Saving checkpoints.

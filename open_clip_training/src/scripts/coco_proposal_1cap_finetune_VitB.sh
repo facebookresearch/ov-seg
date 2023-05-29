@@ -1,5 +1,5 @@
 torchrun --nproc_per_node 4 -m training.main \
-    --train-data ../openclip_data/coco_proposal_1cap_sample_50K.csv \
+    --train-data ../openclip_data/coco_proposal_1cap.csv \
     --train-num-samples 442117 \
     --lr 0.000005 \
     --warmup 100 \
@@ -11,7 +11,7 @@ torchrun --nproc_per_node 4 -m training.main \
     --model  ViT-B-16 \
     --lock-text \
     --zeroshot-frequency 1 \
-    --save-frequency 5 \
+    --save-frequency 1 \
     --epoch 5 \
     --pretrained  openai \
     --ade-val ../openclip_data/ade_gt_150cls_val

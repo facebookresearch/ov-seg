@@ -41,7 +41,7 @@ def run(model, classifier, dataloader, args):
         top1, top5, n = 0., 0., 0.
         preds = []
         targets = []
-        macc = Accuracy(num_classes=150, average='macro').cuda()
+        macc = Accuracy('multiclass', num_classes=150, average='macro').cuda()
         for images, target in tqdm(dataloader, unit_scale=args.batch_size):
             images = images.to(args.device)
             target = target.to(args.device)
@@ -83,9 +83,9 @@ def zero_shot_eval(model, data, epoch, args):
     #     logging.info(inspect.getsource(template))
     logging.info('Building zero-shot classifier')
     if 'ade-val' in data:
-        classifier = zero_shot_classifier(model, imagenet_classnames, openai_imagenet_template, args)
-    else:
         classifier = zero_shot_classifier(model, ade150_classnames, openai_imagenet_template, args)
+    else:
+        classifier = zero_shot_classifier(model, imagenet_classnames, openai_imagenet_template, args)
 
     logging.info('Using classifier')
     results = {}
@@ -99,7 +99,7 @@ def zero_shot_eval(model, data, epoch, args):
         results['imagenetv2-zeroshot-val-top1'] = top1
         results['imagenetv2-zeroshot-val-top5'] = top5
     if 'ade-val' in data:
-        top1, top5 = run(model, classifier, data['ade-val'].dataloader, args)
+        top1, top5, macc = run(model, classifier, data['ade-val'].dataloader, args)
         results['ade150-zeroshot-val-top1'] = top1
         results['ade150-zeroshot-val-top5'] = top5
 

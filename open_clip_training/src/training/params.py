@@ -116,6 +116,7 @@ def parse_args():
     parser.add_argument("--beta2", type=float, default=None, help="Adam beta 2.")
     parser.add_argument("--eps", type=float, default=None, help="Adam epsilon.")
     parser.add_argument("--wd", type=float, default=0.2, help="Weight decay.")
+    parser.add_argument("--mask_wd", type=float, default=0.0, help="Weight decay.")
     parser.add_argument(
         "--warmup", type=int, default=10000, help="Number of steps to warmup for."
     )
@@ -222,6 +223,18 @@ def parse_args():
         default=1.0,
         type=float,
         help="scale max of training.",
+    )
+    parser.add_argument(
+        "--with_mask",
+        default=False,
+        action='store_true',
+        help="Transform with mask",
+    )
+    parser.add_argument(
+        "--mask_lr_multiplier",
+        default=1.0,
+        type=float,
+        help="mask_lr_multiplier",
     )
     parser.add_argument(
         "--contrastive_learning",
