@@ -261,10 +261,11 @@ class Transformer(nn.Module):
 class VisualTransformer(nn.Module):
     def __init__(
             self, image_size: int, patch_size: int, width: int, layers: int, heads: int, mlp_ratio: float,
-            output_dim: int, act_layer: Callable = nn.GELU):
+            output_dim: int, act_layer: Callable = nn.GELU, mask_emb_depth: int = 0):
         super().__init__()
         self.image_size = to_2tuple(image_size)
         self.patch_size = to_2tuple(patch_size)
+        self.width = width
         self.grid_size = (self.image_size[0] // self.patch_size[0], self.image_size[1] // self.patch_size[1])
         self.output_dim = output_dim
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False)
@@ -279,31 +280,32 @@ class VisualTransformer(nn.Module):
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
-    #     self.mask_pool = nn.AvgPool2d(patch_size, stride=patch_size)
-    #     self.mask_emb_depth = 3
-    #     self.mask_embedding = nn.Parameter(torch.zeros(self.mask_emb_depth, self.grid_size[0] * self.grid_size[1], self.width))
-    #     self.init_mask_embedding(mode='mae')
+        if mask_emb_depth > 0:
+            self.mask_pool = nn.AvgPool2d(patch_size, stride=patch_size)
+            self.mask_emb_depth = mask_emb_depth
+            self.mask_embedding = nn.Parameter(torch.zeros(self.mask_emb_depth, self.grid_size[0] * self.grid_size[1], self.width))
+            self.init_mask_embedding(mode='mae')
 
-    # def init_mask_embedding(self, mode='mae'):
-    #     if mode == 'mae':
-    #         # https://github.com/facebookresearch/mae/blob/main/models_mae.py#L80
-    #         torch.nn.init.normal_(self.mask_embedding, std=.02)
-    #     elif mode == 'vpt_random':
-    #         # https://github.com/KMnP/vpt/blob/main/src/models/vit_prompt/vit_mae.py#L34
-    #         val = math.sqrt(6. / float(3 * reduce(mul, self.patch_size, 1) + self.width))  # noqa
-    #         nn.init.uniform_(self.mask_embedding, -val, val)
-    #     elif mode == 'zeros':
-    #         pass
+    def init_mask_embedding(self, mode='mae'):
+        if mode == 'mae':
+            # https://github.com/facebookresearch/mae/blob/main/models_mae.py#L80
+            torch.nn.init.normal_(self.mask_embedding, std=.02)
+        elif mode == 'vpt_random':
+            # https://github.com/KMnP/vpt/blob/main/src/models/vit_prompt/vit_mae.py#L34
+            val = math.sqrt(6. / float(3 * reduce(mul, self.patch_size, 1) + self.width))  # noqa
+            nn.init.uniform_(self.mask_embedding, -val, val)
+        elif mode == 'zeros':
+            pass
 
     def lock(self, unlocked_groups=-1, freeze_bn_stats=False):
         assert unlocked_groups in [-1, 0]
         for _, param in self.named_parameters():
             param.requires_grad = False
-        # if unlocked_groups == 0:
-        #     self.mask_embedding.requires_grad = True
-        #     logging.info('Only update mask embedding')
-        # elif unlocked_groups == -1:
-        #     logging.info('ALL parameters of visual encoder are frozen!')
+        if unlocked_groups == 0:
+            self.mask_embedding.requires_grad = True
+            logging.info('Only update mask embedding')
+        elif unlocked_groups == -1:
+            logging.info('ALL parameters of visual encoder are frozen!')
         
 
 
@@ -311,10 +313,20 @@ class VisualTransformer(nn.Module):
     def set_grad_checkpointing(self, enable=True):
         self.transformer.grad_checkpointing = enable
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, m=None):
         x = self.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
+        if m is not None:
+            m = self.mask_pool(m.to(torch.float)).reshape(m.shape[0], -1).unsqueeze(-1)
+            m = torch.ceil(m)
+            # mask_embedding = self.mask_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device)
+            if self.mask_embedding.shape[1] == 1:
+                mask_embedding = self.mask_embedding.to(x.dtype).repeat(1, x.shape[1], 1)
+            else:
+                mask_embedding = self.mask_embedding.to(x.dtype)
+            # mask_embedding = mask_embedding.repeat(1, x.shape[1], 1)
+            x = x * m + mask_embedding[0].unsqueeze(0) * (1 - m)
         x = torch.cat(
             [self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
              x], dim=1)  # shape = [*, grid ** 2 + 1, width]
@@ -322,7 +334,16 @@ class VisualTransformer(nn.Module):
         x = self.ln_pre(x)
 
         x = x.permute(1, 0, 2)  # NLD -> LND
-        x = self.transformer(x)
+        if m is not None:
+            for i, blk in enumerate(self.transformer.resblocks):
+                d = i + 1
+                x = blk(x, attn_mask=None)
+                if d < self.mask_emb_depth:
+                    masked_x = x[1:, :, :] * m.permute(1, 0, 2) + \
+                               mask_embedding[d].unsqueeze(0).permute(1, 0, 2) * (1 - m.permute(1, 0, 2))
+                    x = torch.cat([x[:1, :, :], masked_x], dim=0)
+        else:
+            x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
 
         x = self.ln_post(x[:, 0, :])
@@ -345,6 +366,7 @@ class CLIPVisionCfg:
     timm_model_pretrained: bool = False  # use (imagenet) pretrained weights for named model
     timm_pool: str = 'avg'  # feature pooling for timm model ('abs_attn', 'rot_attn', 'avg', '')
     timm_proj: str = 'linear'  # linear projection for timm model output ('linear', 'mlp', '')
+    mask_emb_depth: int = 0
 
 
 @dataclass
@@ -407,6 +429,7 @@ class CLIP(nn.Module):
                 mlp_ratio=vision_cfg.mlp_ratio,
                 output_dim=embed_dim,
                 act_layer=act_layer,
+                mask_emb_depth=vision_cfg.mask_emb_depth,
             )
 
         self.transformer = Transformer(
@@ -473,8 +496,8 @@ class CLIP(nn.Module):
         self.visual.set_grad_checkpointing(enable)
         self.transformer.grad_checkpointing = enable
 
-    def encode_image(self, image):
-        return self.visual(image)
+    def encode_image(self, image, mask=None):
+        return self.visual(image, mask)
 
     def encode_text(self, text):
         x = self.token_embedding(text)  # [batch_size, n_ctx, d_model]
@@ -491,12 +514,15 @@ class CLIP(nn.Module):
 
         return x
 
-    def forward(self, image, text):
+    def forward(self, image, text, mask=None):
         if image is None:
             return self.encode_text(text)
         elif text is None:
             return self.encode_image(image)
-        image_features = self.encode_image(image)
+        if mask is None:
+            image_features = self.encode_image(image)
+        else:
+            image_features = self.encode_image(image, mask)
         image_features = F.normalize(image_features, dim=-1)
 
         text_features = self.encode_text(text)

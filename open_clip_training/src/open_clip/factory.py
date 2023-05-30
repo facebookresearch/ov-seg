@@ -73,6 +73,7 @@ def create_model(
         jit: bool = False,
         force_quick_gelu: bool = False,
         pretrained_image: bool = False,
+        mask_emb_depth: int = 0,
 ):
     model_name = model_name.replace('/', '-')  # for callers using old naming with / in ViT names
 
@@ -94,6 +95,9 @@ def create_model(
             # override for use of QuickGELU on non-OpenAI transformer models
             model_cfg["quick_gelu"] = True
 
+        if mask_emb_depth > 0:
+            model_cfg['vision_cfg']['mask_emb_depth'] = mask_emb_depth
+
         if pretrained_image:
             if 'timm_model_name' in model_cfg.get('vision_cfg', {}):
                 # pretrained weight loading for timm models set via vision_cfg
@@ -113,7 +117,11 @@ def create_model(
 
             if checkpoint_path:
                 logging.info(f'Loading pretrained {model_name} weights ({pretrained}).')
-                load_checkpoint(model, checkpoint_path)
+                try:
+                    load_checkpoint(model, checkpoint_path)
+                except:
+                    load_checkpoint(model, checkpoint_path, strict=False)
+                    logging.info("The keys in the checkpoint_path don't match that of model, make sure that you are doing mask prompt tuning!")
             else:
                 logging.warning(f'Pretrained weights ({pretrained}) not found for model {model_name}.')
                 raise RuntimeError(f'Pretrained weights ({pretrained}) not found for model {model_name}.')
@@ -141,13 +149,17 @@ def create_model_and_transforms(
         std: Optional[Tuple[float, ...]] = None,
         scale: Optional[Tuple[float, ...]] = None,
         erosion: bool = False,
+        with_mask: bool = False,
+        mask_emb_depth: int = 0,
 ):
     model = create_model(
         model_name, pretrained, precision, device, jit,
         force_quick_gelu=force_quick_gelu,
-        pretrained_image=pretrained_image)
-    preprocess_train = image_transform(model.visual.image_size, is_train=True, mean=mean, std=std, scale=scale, erosion=erosion)
-    preprocess_val = image_transform(model.visual.image_size, is_train=False, mean=mean, std=std)
+        pretrained_image=pretrained_image,
+        mask_emb_depth=mask_emb_depth)
+    preprocess_train = image_transform(model.visual.image_size, is_train=True, mean=mean, std=std, 
+                                       scale=scale, erosion=erosion, with_mask=with_mask)
+    preprocess_val = image_transform(model.visual.image_size, is_train=False, mean=mean, std=std, with_mask=with_mask)
     return model, preprocess_train, preprocess_val
 
 

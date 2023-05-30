@@ -1,0 +1,22 @@
+torchrun --nproc_per_node 4 -m training.main_mask_prompt_tuning \
+    --train-data ../openclip_data/coco_proposal_1cap.csv \
+    --train-num-samples 442117 \
+    --lr 0.05 \
+    --mask_wd 0.0 \
+    --warmup 100 \
+    --force-quick-gelu \
+    --dataset-type csv \
+    --batch-size 32 \
+    --precision amp \
+    --workers 4 \
+    --with-mask \
+    --model  ViT-L-14 \
+    --mask-emb-depth 3 \
+    --lock-text \
+    --lock-image \
+    --lock-image-unlocked-groups 0 \
+    --zeroshot-frequency 1 \
+    --save-frequency 1 \
+    --epoch 5 \
+    --pretrained /home/jeffliang/ov-seg/open_clip_training/src/logs/2023_05_28-23_35_23-model_ViT-L-14-lr_5e-06-b_32-j_4-p_amp/checkpoints/epoch_5.pt \
+    --ade-val ../openclip_data/ade_gt_150cls_val

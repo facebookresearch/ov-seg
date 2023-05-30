@@ -42,16 +42,27 @@ def run(model, classifier, dataloader, args):
         preds = []
         targets = []
         macc = Accuracy('multiclass', num_classes=150, average='macro').cuda()
-        for images, target in tqdm(dataloader, unit_scale=args.batch_size):
+        for batch, target in tqdm(dataloader, unit_scale=args.batch_size):
+            if args.with_mask:
+                images, masks = batch
+                masks = masks.to(args.device)
+            else:
+                images = batch
             images = images.to(args.device)
             target = target.to(args.device)
 
             with autocast():
                 # predict
                 if args.distributed and not args.horovod:
-                    image_features = model.module.encode_image(images)
+                    if args.with_mask:
+                        image_features = model.module.encode_image(images, masks)
+                    else:
+                        image_features = model.module.encode_image(images)
                 else:
-                    image_features = model.encode_image(images)
+                    if args.with_mask:
+                        image_features = model.encode_image(images, masks)
+                    else:
+                        image_features = model.encode_image(images)
                 image_features = F.normalize(image_features, dim=-1)
                 logits = 100. * image_features @ classifier
 

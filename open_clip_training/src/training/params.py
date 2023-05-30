@@ -225,10 +225,16 @@ def parse_args():
         help="scale max of training.",
     )
     parser.add_argument(
-        "--with_mask",
+        "--with-mask",
         default=False,
         action='store_true',
         help="Transform with mask",
+    )
+    parser.add_argument(
+        "--mask-emb-depth",
+        type=int,
+        default=0,
+        help="Depth of mask prompt",
     )
     parser.add_argument(
         "--mask_lr_multiplier",

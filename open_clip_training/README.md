@@ -32,7 +32,7 @@ $OPENCLIP_DATA/
 
 ## Finetuning CLIP
 
-Note: we only implement the vallina implementation of finetuning CLIP. Training code of mask prompt tuning is not currently avaliable.
+The vallina implementation of finetuning CLIP. 
 
 ```bash
 cd open_clip_training
@@ -48,6 +48,16 @@ cd tools
 python ovseg_replace_clip.py
 # Test new checkpoint, make sure that MODEL.CLIP_ADAPTER.MASK_PROMPT_FWD is set to False
 python train_net.py --num-gpu 8 --eval-only --config-file configs/ovseg_swinB_vitL_bs32_120k.yaml MODEL.CLIP_ADAPTER.MASK_PROMPT_FWD False MODEL.WEIGHTS #PATH_to_new_stored_clpt DATASETS.TEST \(\"ade20k_sem_seg_val\",\)
+```
+
+## Mask prompt tuning
+
+After you obatin the finetuned CLIP, you can try an additional mask prompt tuning to further enhance the performance. Change ``` --pretrained``` to your own checkpoint.
+
+```bash
+cd open_clip_training
+cd src
+bash scripts/coco_proposal_1cap_mask_prompt_tuning_VitL.sh
 ```
 
 # Original README of OpenCLIP V1.3
