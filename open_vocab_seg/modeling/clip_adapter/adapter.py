@@ -125,7 +125,7 @@ class MaskFormerClipAdapter(ClipAdapter):
     ):
         (regions, unnorm_regions), region_masks, valid_flag = self._preprocess_image(image, mask, normalize=normalize)
         if regions is None:
-            return None, valid_flag
+            return None, None, valid_flag
         if isinstance(regions, list):
             assert NotImplementedError
             image_features = torch.cat(
@@ -177,7 +177,7 @@ class MaskFormerClipAdapter(ClipAdapter):
             regions.append(region.unsqueeze(0))
             region_masks.append(region_mask.unsqueeze(0))
         if len(regions) == 0:
-            return None, valid
+            return (None, None), None, valid
         unnorm_regions = regions
         if normalize:
             regions = [(r - self.pixel_mean) / self.pixel_std for r in regions]
